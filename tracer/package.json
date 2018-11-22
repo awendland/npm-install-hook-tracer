@@ -1,0 +1,24 @@
+{
+  "name": "analyzer",
+  "version": "1.0.0",
+  "description": "Analyze the {un}install script activities of an npm package",
+  "main": "index.js",
+  "scripts": {
+    "test": "tsc && ava"
+  },
+  "author": "Alex Wendland <me@alexwendland.com>",
+  "license": "ISC",
+  "dependencies": {
+    "minimist": "^1.2.0",
+    "shelljs": "^0.8.3",
+    "tar": "^4.4.8"
+  },
+  "devDependencies": {
+    "@types/minimist": "^1.2.0",
+    "@types/node": "^10.12.10",
+    "@types/shelljs": "^0.8.0",
+    "@types/tar": "^4.0.0",
+    "ava": "^0.25.0",
+    "typescript": "^3.1.6"
+  }
+}

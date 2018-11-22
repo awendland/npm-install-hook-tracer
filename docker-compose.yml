@@ -1,0 +1,6 @@
+version: '3'
+services:
+  tracer:
+    build: .
+    cap_add:
+      - SYS_PTRACE
