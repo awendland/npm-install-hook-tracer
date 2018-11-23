@@ -11,3 +11,7 @@ docker pull awendland/npm-install-hook-tracer:latest
 docker run -v "$PWD/traces:/workspace/traces" --cap-add SYS_PTRACE awendland/npm-install-hook-tracer PACKGE_NAME
 ```
 
+## TODO
+
+* Resolve package dependencies before running `install`, `postinstall`, and `preuninstall` scripts (since they may depend on a dependency specified in `package.json` to run, such as `node-pre-gyp` for `bcrypt`).
+
