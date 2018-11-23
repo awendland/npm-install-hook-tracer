@@ -4,3 +4,5 @@ services:
     build: .
     cap_add:
       - SYS_PTRACE
+    volumes:
+      - ./traces/:/workspace/traces/

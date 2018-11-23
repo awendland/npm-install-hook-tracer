@@ -4,6 +4,7 @@
   "description": "Analyze the {un}install script activities of an npm package",
   "main": "index.js",
   "scripts": {
+    "build": "tsc && chmod +x build/index.js",
     "test": "tsc && ava"
   },
   "author": "Alex Wendland <me@alexwendland.com>",

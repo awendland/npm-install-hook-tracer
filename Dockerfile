@@ -9,14 +9,21 @@ RUN apt-get update && apt-get install -y \
     strace \
  && rm -rf /var/lib/apt/lists/* \
  && mkdir /tracer
-WORKDIR /tracer
 
-# Copy the package.json file over and install dependencies
+# Build the application
+WORKDIR /tracer
 COPY tracer/package.json /tracer/
 COPY tracer/yarn.lock /tracer/
 RUN yarn
-
-# Copy over the rest of the scripts
+# Separate the dependency install from the build to improve layer cache hits
 COPY tracer/ /tracer/
-RUN yarn tsc
+# 1. Compile the application
+# 2. Link the app into the path
+# 3. Setup a clean working directory
+RUN yarn build \
+ && ln -s /tracer/build/index.js /usr/bin/npm-tracer \
+ && mkdir /workspace
+WORKDIR /workspace
+
+ENTRYPOINT ["/usr/bin/npm-tracer"]
 

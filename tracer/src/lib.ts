@@ -1,10 +1,11 @@
 import { execFile } from 'child_process'
+import { Stats } from 'fs'
 import path from 'path'
-import { performance } from 'perf_hooks'
 import { promisify } from 'util'
 import shell, {ShellString} from 'shelljs'
 import tar from 'tar'
 import { objectify } from './utils'
+import { performance } from 'perf_hooks';
 
 const asyncExecFile = promisify(execFile)
 
@@ -28,6 +29,9 @@ export const INSTALL_HOOKS: Array<InstallHook> = [
   'preuninstall', 'uninstall', 'postuninstall',
 ]
 
+/**
+ * Hooks with registered scripts
+ */
 export type RegisteredHooks = {
   [k in InstallHook]: string
 }
@@ -37,7 +41,7 @@ export type RegisteredHooks = {
  * registered actions.
  */
 export const listRegisteredHooks = (packageJson: {scripts: object}): RegisteredHooks => {
-  return Object.entries(packageJson.scripts)
+  return Object.entries(packageJson.scripts || {})
     .filter(([k, v]: [string, string]) => INSTALL_HOOKS.includes(k as any))
     .reduce(objectify, {} as RegisteredHooks)
 }
@@ -46,12 +50,13 @@ export const listRegisteredHooks = (packageJson: {scripts: object}): RegisteredH
  * Run the provided script with strace attached
  */
 export const straceScript = async (
+  traceFilePrefix: string,
   scriptCmd: string,
-  packageDir: string
-): Promise<{strace: ShellString, stdout: string, stderr: string, runtime: number}> => {
+  packageDir: string,
+): Promise<{traceFiles: Stats[], stdout: string, stderr: string, runtime: number}> => {
   const start = performance.now()
   const {stdout, stderr} = await asyncExecFile('strace', [
-    '-o', path.resolve('./strace-'),
+    '-o', traceFilePrefix,
     '-e', 'trace=file,network', // Trace all file and network activity
     '-s8192', // Show 8k output of each trace record
     '-ff', // Follow child processes
@@ -61,6 +66,6 @@ export const straceScript = async (
     maxBuffer: 50 * 1024 * 1024, // Max amount of bytes allowed on stdout and stderr
     cwd: packageDir,
   })
-  const strace = shell.cat('./strace-*')
-  return {strace, stdout, stderr, runtime: performance.now() - start}
+  const traceFiles = shell.ls('-l', `${traceFilePrefix}*`) as any as Stats[]
+  return {traceFiles, stdout, stderr, runtime: performance.now() - start}
 }
