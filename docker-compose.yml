@@ -6,3 +6,13 @@ services:
       - SYS_PTRACE
     volumes:
       - ./traces/:/workspace/traces/
+# NOTE: this doesn't seem to improve performance (in a one package
+# test w/ electron it went from 8s to 14s w/ this registry cache
+# event after the cache was primed)
+#  registry-cache:
+#    image: verdaccio/verdaccio:4.x-next
+#    ports:
+#      - "4837:4837"
+#    volumes:
+#      - "./registry-cache/storage:/vardaccio/storage"
+#      - "./registry-cache/conf:/vardaccio/conf"

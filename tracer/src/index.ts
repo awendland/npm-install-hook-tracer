@@ -12,12 +12,17 @@ const argv = require('minimist')(process.argv.slice(2))
 if (argv.help || argv.h) {
   console.log(`Usage: ${process.argv[1]} <package_name>`)
   console.log(`package_name           this can be bare like "express" or specify a version "express@4.14.0"`)
+  console.log(`--registry/-r=npmjs    change the registry used by npm`)
   console.log(`--traceDir/-o=traces/  change the dir where strace output is written to`)
 }
 const packageName = argv._[0]
 if (!packageName) {
   console.error(`Usage: ${process.argv[1]} <package_name>`)
   process.exit(1)
+}
+
+if (argv.registry || argv.r) {
+  execFileSync('npm', ['set', 'registry', argv.registry || argv.r])
 }
 
 const msToSec2 = (ms: number) => (ms / 1000).toFixed(2)
