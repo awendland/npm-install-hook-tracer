@@ -16,9 +16,28 @@ one's computer and pulling this git repo, `cd` into this repo the run the
 following commands. 
 
 ```[bash]
-mkdir traces // If you haven't already made a traces dir.  
+mkdir traces
 docker pull awendland/npm-install-hook-tracer:latest
 docker run -v "$PWD/traces:/workspace/traces" --cap-add SYS_PTRACE awendland/npm-install-hook-tracer PACKGE_NAME
+```
+
+## Development
+
+When developing:
+
+```sh
+# This will create a local dir to store the strace output
+mkdir traces
+# This will build an image according to the Dockerfile
+docker-compose build
+# This will run the docker image we just built (it's called "tracer")
+docker-compose run tracer PACKAGE_NAME
+```
+
+Easy (slow b/c sequential) batch run:
+
+```sh
+cat most-depended-upon.txt | xargs -n1 docker-compose run tracer ^&1 | tee most-depended-upon--traced.out
 ```
 
 ## TODO

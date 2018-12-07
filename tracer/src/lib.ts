@@ -2,27 +2,29 @@ import { execFile } from 'child_process'
 import { Stats } from 'fs'
 import path from 'path'
 import { promisify } from 'util'
+import npmBundle = require('npm-bundle')
 import shell, {ShellString} from 'shelljs'
 import tar from 'tar'
 import { objectify } from './utils'
-import { performance } from 'perf_hooks';
+import { performance } from 'perf_hooks'
 
 const asyncExecFile = promisify(execFile)
+const asyncNpmBundle = promisify(npmBundle)
 
 /**
  * Pulls the specified package from npm and extracts it into the working
  * directory.
  */
 export const pullPackage = async (packageName: string): Promise<{packageFile: string, extractedFolder: string}> => {
-  const {stdout: packStdout} = await asyncExecFile('npm-bundle', [packageName])
+  const {file: packStdout} = await asyncNpmBundle([packageName, `--ignore-scripts`], {verbose: false})
   const packageFile = packStdout.trim()
   const precontents = new Set(shell.ls())
   await tar.extract({file: packageFile})
-  const postcontents = new Set(shell.ls())
-  const folderPath = 
-    [...postcontents].filter(x => !precontents.has(x))
-
-  return {packageFile, extractedFolder: './' + folderPath}
+  const postcontents = shell.ls()
+  const potentialFolderPaths = postcontents.filter(x => !precontents.has(x))
+  if (potentialFolderPaths.length > 1)
+    throw new Error(`Multiple bundle outputs detected: ${potentialFolderPaths}`)
+  return {packageFile, extractedFolder: './' + potentialFolderPaths[0]}
 }
 
 /**
