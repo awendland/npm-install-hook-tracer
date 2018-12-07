@@ -43,7 +43,7 @@ export const removeInstallHooks = async (packageJsonPath: string): Promise<void>
 }
 
 // Regex to retrieve the number of installed packages from `npm install` stdout
-const RE_NUM_PACKAGES = /added (\d+) packages from/
+const RE_NUM_PACKAGES = /added (\d+) package/
 
 /**
  * Resolve dependencies requested by a packge.json file in a given directory. Effectively,
@@ -54,6 +54,11 @@ const RE_NUM_PACKAGES = /added (\d+) packages from/
  * main package.json's scripts, or run this command with `--ignore-scripts`.
  */
 export const resolveDependencies = async (packageDir: string): Promise<{numPackages: number}> => {
+  // Some packages (bcrypt) include node_modules/ which is causing npm not to
+  // create the normal .bin links for things like node-pre-gyp. Deleting the node_modules
+  // folder first seems to solve this issue.
+  shell.rm('-rf', path.resolve(packageDir, 'node_modules'))
+
   const {stdout} = await asyncExecFile('npm', [
     'install',
     '--no-audit', // Disable running audit checking for the install (uncertain speedup)
@@ -114,6 +119,10 @@ export const straceScript = async (
   ], {
     maxBuffer: 50 * 1024 * 1024, // Max amount of bytes allowed on stdout and stderr
     cwd: packageDir,
+    env: Object.assign({}, process.env, {
+      // Ensure that it has access to the subdependency files in .bin
+      PATH: `${path.resolve(packageDir, 'node_modules', '.bin')}:${process.env.PATH}`,
+    }),
   })
   const traceFiles = shell.ls('-l', `${traceFilePrefix}*`) as any as fs.Stats[]
   return {traceFiles, stdout, stderr, runtime: performance.now() - start}

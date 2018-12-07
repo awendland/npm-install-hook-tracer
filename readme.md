@@ -37,6 +37,12 @@ docker-compose build
 docker-compose run tracer PACKAGE_NAME
 ```
 
+To use the container for manual debugging:
+
+```sh
+docker-compose run --entrypoint=/bin/bash tracer<Paste>
+```
+
 Easy (slow b/c sequential) batch run:
 
 ```sh
