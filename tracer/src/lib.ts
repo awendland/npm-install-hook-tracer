@@ -1,5 +1,5 @@
 import { execFile } from 'child_process'
-import { Stats } from 'fs'
+import fs from 'fs'
 import path from 'path'
 import { promisify } from 'util'
 import shell, {ShellString} from 'shelljs'
@@ -8,6 +8,8 @@ import { objectify } from './utils'
 import { performance } from 'perf_hooks'
 
 const asyncExecFile = promisify(execFile)
+const asyncReadFile = promisify(fs.readFile)
+const asyncWriteFile = promisify(fs.writeFile)
 
 /**
  * Pulls the specified package from npm and extracts it into the working
@@ -25,6 +27,17 @@ export const pullPackage = async (packageName: string): Promise<{packageFile: st
   return {packageFile, extractedFolder: './' + potentialFolderPaths[0]}
 }
 
+/**
+ * Rewrite the specified package.json to have no install hooks.
+ */
+export const removeInstallHooks = async (packageJsonPath: string): Promise<void> => {
+  const packageJson = JSON.parse(await asyncReadFile(packageJsonPath, {encoding: 'utf-8'}) as string)
+  for (const hook of INSTALL_HOOKS) {
+    delete (packageJson.scripts || {})[hook]
+  }
+  await asyncWriteFile(packageJsonPath, JSON.stringify(packageJson, null, 2))
+}
+
 // Regex to retrieve the number of installed packages from `npm install` stdout
 const RE_NUM_PACKAGES = /added (\d+) packages from/
 
@@ -32,7 +45,9 @@ const RE_NUM_PACKAGES = /added (\d+) packages from/
  * Resolve dependencies requested by a packge.json file in a given directory. Effectively,
  * this just runs `npm install` in that directory.
  *
- * NOTE: this will run the install scripts of the package's dependencies
+ * NOTE: this will run the install scripts of the package's dependencies as well as those
+ * of the main package.json! Make sure to run removeInstallHooks first to stop the
+ * main package.json's scripts, or run this command with `--ignore-scripts`.
  */
 export const resolveDependencies = async (packageDir: string): Promise<{numPackages: number}> => {
   const {stdout} = await asyncExecFile('npm', [
@@ -80,7 +95,7 @@ export const straceScript = async (
   traceFilePrefix: string,
   scriptCmd: string,
   packageDir: string,
-): Promise<{traceFiles: Stats[], stdout: string, stderr: string, runtime: number}> => {
+): Promise<{traceFiles: fs.Stats[], stdout: string, stderr: string, runtime: number}> => {
   const start = performance.now()
   const {stdout, stderr} = await asyncExecFile('strace', [
     '-o', traceFilePrefix,
@@ -93,6 +108,6 @@ export const straceScript = async (
     maxBuffer: 50 * 1024 * 1024, // Max amount of bytes allowed on stdout and stderr
     cwd: packageDir,
   })
-  const traceFiles = shell.ls('-l', `${traceFilePrefix}*`) as any as Stats[]
+  const traceFiles = shell.ls('-l', `${traceFilePrefix}*`) as any as fs.Stats[]
   return {traceFiles, stdout, stderr, runtime: performance.now() - start}
 }

@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import shell from 'shelljs'
+import { execFileSync } from 'child_process'
 import { statSync } from 'fs'
 import path from 'path'
 import { performance } from 'perf_hooks'
@@ -37,13 +38,17 @@ const msToSec2 = (ms: number) => (ms / 1000).toFixed(2)
 
   argv.traceDir = argv.traceDir || argv.o || `traces/${packageFile.replace('.tgz', '')}`
   console.error(`Analyzing "${packageFile}"`)
-  const packageJson = require(path.resolve(extractedFolder, 'package.json'))
+  const packageJsonPath = path.resolve(extractedFolder, 'package.json')
+  const packageJson = require(packageJsonPath)
   const registeredHooks = lib.listRegisteredHooks(packageJson)
 
   if (Object.keys(registeredHooks).length > 0) {
     console.error(`Found install hooks:${Object.entries(registeredHooks)
                                           .map(([k, v]) => `\n- ${k}: ${v}`)
                                           .join('')}`)
+
+    // To keep from running the package's install hooks prematurely
+    await lib.removeInstallHooks(packageJsonPath)
 
     process.stderr.write(`Resolving dependencies for "${packageName}" `)
     const dependenciesStart = performance.now()
