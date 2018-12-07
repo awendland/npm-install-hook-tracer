@@ -14,7 +14,7 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /tracer
 COPY tracer/package.json /tracer/
 COPY tracer/yarn.lock /tracer/
-RUN yarn
+RUN yarn && npm install -g npm-bundle
 # Separate the dependency install from the build to improve layer cache hits
 COPY tracer/ /tracer/
 # 1. Compile the application
