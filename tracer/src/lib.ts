@@ -16,8 +16,13 @@ const asyncExecFile = promisify(execFile)
 export const pullPackage = async (packageName: string): Promise<{packageFile: string, extractedFolder: string}> => {
   const {stdout: packStdout} = await asyncExecFile('npm', ['pack', packageName])
   const packageFile = packStdout.trim()
+  const precontents = new Set(shell.ls())
   await tar.extract({file: packageFile})
-  return {packageFile, extractedFolder: './package/'}
+  const postcontents = new Set(shell.ls())
+  const folderPath = 
+    [...postcontents].filter(x => !precontents.has(x))
+
+  return {packageFile, extractedFolder: './' + folderPath}
 }
 
 /**
