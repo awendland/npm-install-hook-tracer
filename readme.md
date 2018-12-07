@@ -24,10 +24,11 @@ docker run -v "$PWD/traces:/workspace/traces" --cap-add SYS_PTRACE awendland/npm
 docker run --entrypoint=/usr/bin/npm-hook-check awendland/npm-install-hook-tracer PACKGE_NAME_1 PACKAGE_NAME_2
 ```
 
-## Development
+## Advanced Usage
 
-When developing:
+### Development
 
+#### Quickly Iterate
 ```sh
 # This will create a local dir to store the strace output
 mkdir traces
@@ -37,23 +38,33 @@ docker-compose build
 docker-compose run tracer PACKAGE_NAME
 ```
 
+#### Manual Usage for Debugging
 To use the container for manual debugging:
 
 ```sh
 docker-compose run --entrypoint=/bin/bash tracer<Paste>
 ```
 
+### Parallelization
+
+#### Batch Sequential
 Easy (slow b/c sequential) batch run:
 
 ```sh
 cat most-depended-upon.txt | xargs -n1 docker-compose run tracer ^&1 | tee most-depended-upon--traced.out
 ```
 
-More complex parallelized batch run:
+#### Batch Tracer
+
+Look into gnu `parallel`'s `--job-log` and `--resume` functionality when running big jobs.
 
 ```sh
 cat most-depended-upon.txt | xargs -n1 -P12 -I\{\} sh -c 'docker-compose run tracer {} 2> stderr/{}--$(date -u +"%Y-%m-%dT%H:%M:%SZ").out'
+# Or better yet, use gnu parallel
+parallel -a 1000-most-dep--w-hooks--names.txt --eta -N1 'sh -c \'docker-compose run tracer {} 2> stderr/{}--$(date -u +"%Y-%m-%dT%H:%M:%SZ").out\''
 ```
+
+#### Batch Checker
 
 Batch run to check which packages in a list have install hooks:
 
