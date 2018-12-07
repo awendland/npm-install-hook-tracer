@@ -2,21 +2,19 @@ import { execFile } from 'child_process'
 import { Stats } from 'fs'
 import path from 'path'
 import { promisify } from 'util'
-import npmBundle = require('npm-bundle')
 import shell, {ShellString} from 'shelljs'
 import tar from 'tar'
 import { objectify } from './utils'
 import { performance } from 'perf_hooks'
 
 const asyncExecFile = promisify(execFile)
-const asyncNpmBundle = promisify(npmBundle)
 
 /**
  * Pulls the specified package from npm and extracts it into the working
  * directory.
  */
 export const pullPackage = async (packageName: string): Promise<{packageFile: string, extractedFolder: string}> => {
-  const {file: packStdout} = await asyncNpmBundle([packageName, `--ignore-scripts`], {verbose: false})
+  const {stdout: packStdout} = await asyncExecFile('npm', ['pack', packageName])
   const packageFile = packStdout.trim()
   const precontents = new Set(shell.ls())
   await tar.extract({file: packageFile})
@@ -25,6 +23,28 @@ export const pullPackage = async (packageName: string): Promise<{packageFile: st
   if (potentialFolderPaths.length > 1)
     throw new Error(`Multiple bundle outputs detected: ${potentialFolderPaths}`)
   return {packageFile, extractedFolder: './' + potentialFolderPaths[0]}
+}
+
+// Regex to retrieve the number of installed packages from `npm install` stdout
+const RE_NUM_PACKAGES = /added (\d+) packages from/
+
+/**
+ * Resolve dependencies requested by a packge.json file in a given directory. Effectively,
+ * this just runs `npm install` in that directory.
+ *
+ * NOTE: this will run the install scripts of the package's dependencies
+ */
+export const resolveDependencies = async (packageDir: string): Promise<{numPackages: number}> => {
+  const {stdout} = await asyncExecFile('npm', [
+    'install',
+    '--no-audit', // Disable running audit checking for the install (uncertain speedup)
+    '--no-package-lock', // Don't create a package-lock.json file (uncertain speedup)
+    '--only=prod', // Only install prod dependencies (variable ~25% speedup)
+    '--legacy-bundling', // Don't deduplicate packages (variable ~10% speedup)
+  ], {cwd: packageDir})
+  return {
+    numPackages: Number((RE_NUM_PACKAGES.exec(stdout) || [])[1]),
+  }
 }
 
 /**
@@ -44,7 +64,7 @@ export type RegisteredHooks = {
 }
 
 /**
- * List the hooks that a package has registered for, along with the 
+ * List the hooks that a package has registered for, along with the
  * registered actions.
  */
 export const listRegisteredHooks = (packageJson: {scripts: object}): RegisteredHooks => {

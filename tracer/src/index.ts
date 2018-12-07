@@ -23,29 +23,41 @@ if (!packageName) {
 const msToSec2 = (ms: number) => (ms / 1000).toFixed(2)
 
 ;(async () => {
-  process.stderr.write(`Retrieving "${packageName}" `)
-  const downloadStart = performance.now()
+
+  process.stderr.write(`Retrieving tarball for "${packageName}" `)
+  const retrievingStart = performance.now()
   const {packageFile, extractedFolder} = await lib.pullPackage(packageName)
-  process.stderr.write(`time[${msToSec2(performance.now() - downloadStart)}s] `)
-  process.stderr.write(`size[${(statSync(packageFile).size / 1024).toFixed(2)}KiB]\n`)
+  process.stderr.write(`time[${msToSec2(performance.now() - retrievingStart)}s] `)
+  process.stderr.write(`size[${(statSync(packageFile).size / 1024).toFixed(2)} KiB]\n`)
+
   argv.traceDir = argv.traceDir || argv.o || `traces/${packageFile.replace('.tgz', '')}`
   console.error(`Analyzing "${packageFile}"`)
   const packageJson = require(path.resolve(extractedFolder, 'package.json'))
   const registeredHooks = lib.listRegisteredHooks(packageJson)
-  console.error(`Found install hooks:${Object.keys(registeredHooks).length == 0
-                ? ' none'
-                : Object.entries(registeredHooks)
-                    .map(([k, v]) => `\n- ${k}: ${v}`)
-                    .join('')
-  }`)
-  console.error(`Tracing ${Object.entries(registeredHooks).length} hook(s)`)
-  shell.mkdir('-p', argv.traceDir)
-  for (const [hook, script] of Object.entries(registeredHooks)) {
-    process.stderr.write(`- ${hook} = `)
-    const {traceFiles, stdout, stderr, runtime} =
-      await lib.straceScript(path.resolve(argv.traceDir, `${hook}`), script, extractedFolder)
-    const traceSize = traceFiles.reduce((sum, stat) => sum + stat.size, 0)
-    process.stderr.write(`traces[${traceFiles.length}] size[${(traceSize / 1024).toFixed(2)}KiB] time[${msToSec2(runtime)}s]\n`)
+
+  if (Object.keys(registeredHooks).length > 0) {
+    console.error(`Found install hooks:${Object.entries(registeredHooks)
+                                          .map(([k, v]) => `\n- ${k}: ${v}`)
+                                          .join('')}`)
+
+    process.stderr.write(`Resolving dependencies for "${packageName}" `)
+    const dependenciesStart = performance.now()
+    const {numPackages: numDependencies} = await lib.resolveDependencies(extractedFolder)
+    process.stderr.write(`time[${msToSec2(performance.now() - dependenciesStart)}s] `)
+    process.stderr.write(`count[${numDependencies}]\n`)
+
+    console.error(`Tracing ${Object.entries(registeredHooks).length} hook(s)`)
+    shell.mkdir('-p', argv.traceDir)
+    for (const [hook, script] of Object.entries(registeredHooks)) {
+      process.stderr.write(`- ${hook} = `)
+      const {traceFiles, stdout, stderr, runtime} =
+        await lib.straceScript(path.resolve(argv.traceDir, `${hook}`), script, extractedFolder)
+      const traceSize = traceFiles.reduce((sum, stat) => sum + stat.size, 0)
+      process.stderr.write(`traces[${traceFiles.length}] size[${(traceSize / 1024).toFixed(2)} KiB] time[${msToSec2(runtime)}s]\n`)
+    }
+  }
+  else {
+    console.error(`No install hooks for "${packageName}"`)
   }
 })().catch(e => {
   console.error(e)
