@@ -6,6 +6,11 @@ services:
       - SYS_PTRACE
     volumes:
       - ./traces/:/workspace/traces/
+  checker:
+    build: .
+    entrypoint: ["/usr/bin/npm-hook-check"]
+    volumes:
+      - ./check/:/workspace/check/
 # NOTE: this doesn't seem to improve performance (in a one package
 # test w/ electron it went from 8s to 14s w/ this registry cache
 # event after the cache was primed)

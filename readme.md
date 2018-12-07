@@ -18,7 +18,10 @@ following commands.
 ```[bash]
 mkdir traces
 docker pull awendland/npm-install-hook-tracer:latest
+# To run full trace on a package's hooks
 docker run -v "$PWD/traces:/workspace/traces" --cap-add SYS_PTRACE awendland/npm-install-hook-tracer PACKGE_NAME
+# To batch filter a list of packages to see if they have hooks
+docker run --entrypoint=/usr/bin/npm-hook-check awendland/npm-install-hook-tracer PACKGE_NAME_1 PACKAGE_NAME_2
 ```
 
 ## Development
@@ -38,6 +41,18 @@ Easy (slow b/c sequential) batch run:
 
 ```sh
 cat most-depended-upon.txt | xargs -n1 docker-compose run tracer ^&1 | tee most-depended-upon--traced.out
+```
+
+More complex parallelized batch run:
+
+```sh
+cat most-depended-upon.txt | xargs -n1 -P12 -I\{\} sh -c 'docker-compose run tracer {} 2> stderr/{}--$(date -u +"%Y-%m-%dT%H:%M:%SZ").out'
+```
+
+Batch run to check which packages in a list have install hooks:
+
+```sh
+parallel -a most-depended-upon.txt --eta -N100 -u -m 'docker-compose run checker -q' > most-depended-upon--with-hooks.txt
 ```
 
 ## TODO

@@ -18,12 +18,15 @@ RUN yarn
 # Separate the dependency install from the build to improve layer cache hits
 COPY tracer/ /tracer/
 # 1. Compile the application
-# 2. Link the app into the path
-# 3. Setup a clean working directory
+# 2/3. Link the app into the path
+# 4. Setup a clean working directory
+# 5. Disable npm progress output
 RUN yarn build \
- && ln -s /tracer/build/index.js /usr/bin/npm-tracer \
- && mkdir /workspace
+ && ln -s /tracer/build/cli-trace.js /usr/bin/npm-hook-trace \
+ && ln -s /tracer/build/cli-check.js /usr/bin/npm-hook-check \
+ && mkdir /workspace \
+ && npm set progress=false
 WORKDIR /workspace
 
-ENTRYPOINT ["/usr/bin/npm-tracer"]
+ENTRYPOINT ["/usr/bin/npm-hook-trace"]
 

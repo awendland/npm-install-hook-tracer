@@ -11,6 +11,10 @@ const asyncExecFile = promisify(execFile)
 const asyncReadFile = promisify(fs.readFile)
 const asyncWriteFile = promisify(fs.writeFile)
 
+export const loadJsonFile = async (filePath: string): Promise<any> => {
+  return JSON.parse(await asyncReadFile(filePath, {encoding: 'utf-8'}) as string)
+}
+
 /**
  * Pulls the specified package from npm and extracts it into the working
  * directory.
@@ -31,7 +35,7 @@ export const pullPackage = async (packageName: string): Promise<{packageFile: st
  * Rewrite the specified package.json to have no install hooks.
  */
 export const removeInstallHooks = async (packageJsonPath: string): Promise<void> => {
-  const packageJson = JSON.parse(await asyncReadFile(packageJsonPath, {encoding: 'utf-8'}) as string)
+  const packageJson = await loadJsonFile(packageJsonPath)
   for (const hook of INSTALL_HOOKS) {
     delete (packageJson.scripts || {})[hook]
   }
@@ -56,7 +60,10 @@ export const resolveDependencies = async (packageDir: string): Promise<{numPacka
     '--no-package-lock', // Don't create a package-lock.json file (uncertain speedup)
     '--only=prod', // Only install prod dependencies (variable ~25% speedup)
     '--legacy-bundling', // Don't deduplicate packages (variable ~10% speedup)
-  ], {cwd: packageDir})
+  ], {
+    cwd: packageDir,
+    maxBuffer: 10 * 1024 * 1024,
+  })
   return {
     numPackages: Number((RE_NUM_PACKAGES.exec(stdout) || [])[1]),
   }
