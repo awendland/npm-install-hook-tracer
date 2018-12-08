@@ -21,11 +21,14 @@ COPY tracer/ /tracer/
 # 2/3. Link the app into the path
 # 4. Setup a clean working directory
 # 5. Disable npm progress output
+# 6. Install node-gyp globally to avoid replicating npm's special install resolution for it
+#    - https://github.com/npm/cli/blob/4c65cd/bin/node-gyp-bin/node-gyp
 RUN yarn build \
  && ln -s /tracer/build/cli-trace.js /usr/bin/npm-hook-trace \
  && ln -s /tracer/build/cli-check.js /usr/bin/npm-hook-check \
  && mkdir /workspace \
- && npm set progress=false
+ && npm set progress=false \
+ && npm i -g node-gyp
 WORKDIR /workspace
 
 ENTRYPOINT ["/usr/bin/npm-hook-trace"]
