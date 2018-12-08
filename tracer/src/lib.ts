@@ -122,6 +122,8 @@ export const straceScript = async (
     env: Object.assign({}, process.env, {
       // Ensure that it has access to the subdependency files in .bin
       PATH: `${path.resolve(packageDir, 'node_modules', '.bin')}:${process.env.PATH}`,
+      // Fix a bug in old versions of phantomjs https://github.com/yarnpkg/yarn/issues/1538
+      npm_config_tmp: `/tmp`,
     }),
   })
   const traceFiles = shell.ls('-l', `${traceFilePrefix}*`) as any as fs.Stats[]

@@ -54,7 +54,7 @@ const msToSec2 = (ms: number) => (ms / 1000).toFixed(2)
     const dependenciesStart = performance.now()
     const {numPackages: numDependencies} = await lib.resolveDependencies(extractedFolder)
     process.stderr.write(`time[${msToSec2(performance.now() - dependenciesStart)}s] `)
-    process.stderr.write(`count[${numDependencies}]\n`)
+    process.stderr.write(`packages[${numDependencies}]\n`)
 
     console.error(`Tracing ${Object.entries(registeredHooks).length} hook(s)`)
     shell.mkdir('-p', argv.traceDir)
