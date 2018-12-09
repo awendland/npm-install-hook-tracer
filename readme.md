@@ -35,14 +35,14 @@ mkdir traces
 # This will build an image according to the Dockerfile
 docker-compose build
 # This will run the docker image we just built (it's called "tracer")
-docker-compose run tracer PACKAGE_NAME
+docker-compose run --rm tracer PACKAGE_NAME
 ```
 
 #### Manual Usage for Debugging
 To use the container for manual debugging:
 
 ```sh
-docker-compose run --entrypoint=/bin/bash tracer<Paste>
+docker-compose run --rm --entrypoint=/bin/bash tracer
 ```
 
 ### Parallelization
@@ -51,7 +51,7 @@ docker-compose run --entrypoint=/bin/bash tracer<Paste>
 Easy (slow b/c sequential) batch run:
 
 ```sh
-cat most-depended-upon.txt | xargs -n1 docker-compose run tracer ^&1 | tee most-depended-upon--traced.out
+cat most-depended-upon.txt | xargs -n1 docker-compose run --rm tracer ^&1 | tee most-depended-upon--traced.out
 ```
 
 #### Batch Tracer
@@ -59,9 +59,9 @@ cat most-depended-upon.txt | xargs -n1 docker-compose run tracer ^&1 | tee most-
 Look into gnu `parallel`'s `--job-log` and `--resume` functionality when running big jobs.
 
 ```sh
-cat most-depended-upon.txt | xargs -n1 -P12 -I\{\} sh -c 'docker-compose run tracer {} 2> stderr/{}--$(date -u +"%Y-%m-%dT%H:%M:%SZ").out'
+cat most-depended-upon.txt | xargs -n1 -P12 -I\{\} sh -c 'docker-compose run --rm tracer {} 2> stderr/{}--$(date -u +"%Y-%m-%dT%H:%M:%SZ").out'
 # Or better yet, use gnu parallel
-parallel -a 1000-most-dep--w-hooks--names.txt --eta -N1 'sh -c \'docker-compose run tracer {} 2> stderr/{}--$(date -u +"%Y-%m-%dT%H:%M:%SZ").out\''
+parallel -a 1000-most-dep--w-hooks--names.txt --eta -N1 'sh -c \'docker-compose run --rm tracer {} 2> stderr/{}--$(date -u +"%Y-%m-%dT%H:%M:%SZ").out\''
 ```
 
 #### Batch Checker
@@ -69,7 +69,7 @@ parallel -a 1000-most-dep--w-hooks--names.txt --eta -N1 'sh -c \'docker-compose 
 Batch run to check which packages in a list have install hooks:
 
 ```sh
-parallel -a most-depended-upon.txt --eta -N100 -u -m 'docker-compose run checker -q' > most-depended-upon--with-hooks.txt
+parallel -a most-depended-upon.txt --eta -N100 -u -m 'docker-compose run --rm checker -q' > most-depended-upon--with-hooks.txt
 ```
 
 ## TODO
