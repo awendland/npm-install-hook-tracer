@@ -1,0 +1,20 @@
+{
+  "name": "analyzer",
+  "version": "1.0.0",
+  "description": "Analyze the {un}install script activities of an npm package",
+  "main": "index.js",
+  "scripts": {
+    "start": "node get_packages.js"
+  },
+  "author": "Alex Wendland <me@alexwendland.com>",
+  "license": "ISC",
+  "dependencies": {
+    "all-the-package-names": "1.3577.0",
+    "axios": "0.18.0",
+    "es6-promise": "4.2.5",
+    "isomorphic-fetch": "2.2.1",
+    "wu": "2.1.0"
+  },
+  "devDependencies": {
+  }
+}

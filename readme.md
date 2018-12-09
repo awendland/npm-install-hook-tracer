@@ -72,9 +72,18 @@ Batch run to check which packages in a list have install hooks:
 parallel -a most-depended-upon.txt --eta -N100 -u -m 'docker-compose run --rm checker -q' > most-depended-upon--with-hooks.txt
 ```
 
+### Package Stats
+
+The script in `package-stats` can be used to retrieve the number of downloads in the last month for the
+entire set of packages in the npm repo. Update `all-the-package-names` to the latest version, and
+then run `yarn start` to trigger the stat retrieval. The retrieval is resumable (it simply restarts
+after the last package recorded in the `package-stats.tsv` output file). It batches requests to the
+npm API at the max size of 128, it drops any packages with `@` or `/` in the name (because they
+don't work with batching), and it rate limits with a 200ms delay after each request.
+
 ## TODO
 
-* Resolve package dependencies before running `install`, `postinstall`, and
+* ~~Resolve package dependencies before running `install`, `postinstall`, and
   `preuninstall` scripts (since they may depend on a dependency specified in
-  `package.json` to run, such as `node-pre-gyp` for `bcrypt`).
+  `package.json` to run, such as `node-pre-gyp` for `bcrypt`).~~
 
